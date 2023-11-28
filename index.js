@@ -24,7 +24,41 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
 
+        const mealsCollection = client.db("AlphaFeastDB").collection("mealsCollection");
+
+        //non-registered users
+        //code for showing data in tabs
+        app.get('/breakfast', async (req, res) => {
+            const query = { "mealType": 'breakfast' };
+            const cursor = await mealsCollection.find(query).toArray();
+            res.send(cursor);
+        })
+
+        app.get('/lunch', async (req, res) => {
+            const query = { "mealType": 'lunch' };
+            const cursor = await mealsCollection.find(query).toArray();
+            res.send(cursor);
+        })
+
+        app.get('/dinner', async (req, res) => {
+            const query = { "mealType": 'dinner' };
+            const cursor = await mealsCollection.find(query).toArray();
+            res.send(cursor);
+        })
         
+        app.get('/allMeals', async (req, res) => {
+            // const query = { "mealType": 'breakfast' };
+            const cursor = await mealsCollection.find().toArray();
+            res.send(cursor);
+        })
+
+
+        //admin
+        app.post("/meals", async (req, res) => {
+            const dataObj = req.body;
+            const result = await mealsCollection.insertOne(dataObj);
+            res.send(result);
+        })
 
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
