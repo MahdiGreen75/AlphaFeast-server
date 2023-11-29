@@ -26,6 +26,7 @@ async function run() {
 
         const mealsCollection = client.db("AlphaFeastDB").collection("mealsCollection");
         const usersCollection = client.db("AlphaFeastDB").collection("usersCollection");
+        const reviewAndMealRequestCollection = client.db("AlphaFeastDB").collection("reviewAndMealRequestCollection");
 
         //non-registered users
         //code for showing data in tabs
@@ -59,22 +60,72 @@ async function run() {
             const review = req.body;
             const filter = { _id: new ObjectId(id) };
             const cursor = await mealsCollection.find(filter).toArray();
-            const options = { upsert: true };
             const prevReview = cursor[0].mealReview;
             const updateDoc = {
                 $set: {
                     mealReview: [...prevReview, review.review]
                 },
             };
-            const result = await mealsCollection.updateOne(filter, updateDoc, options);
+            const result = await mealsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+
 
         //users
         app.post("/users", async (req, res) => {
             const dataObj = req.body;
             const result = await usersCollection.insertOne(dataObj);
             res.send(result);
+        })
+
+        //userReview and mealRequest setting
+        app.post("/userReviews", async (req, res) => {
+            const dataObj = req.body;
+            const result = await reviewAndMealRequestCollection.insertOne(dataObj);
+            res.send(result);
+        })
+
+        //adding meals review to users
+        app.patch('/userReviews/:id', async (req, res) => {
+            const email = req.params.id;
+            const dataObj = req.body;
+
+            const currentReview = dataObj.dataObj;
+            const filter = { user_email: email };
+            const cursor = await usersCollection.find(filter).toArray();
+            const prevReview = cursor[0].user_reviews;
+
+            const updateDoc = {
+                $set: {
+                    user_reviews: [...prevReview, currentReview]
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+        //Receiving meal request for individual users
+        app.patch('/mealReq/:email', async (req, res) => {
+            const email = req.params.email;
+            const dataObj = req.body;
+            const currentReq = dataObj.mealReqObj;
+            const filter = { user_email: email };
+            const cursor = await usersCollection.find(filter).toArray();
+            const prevReq = cursor[0].requestedMealsId;
+
+            const updateDoc = {
+                $set: {
+                    requestedMealsId: [...prevReq, currentReq]
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+        //getting mealRequest value
+        app.get("/requests/:email", async (req, res) => {
+            const email = req.params.email;
+            const filter = { user_email: email };
+            const cursor = await usersCollection.find(filter).toArray();
+            const data = cursor[0].requestedMealsId
         })
 
         //admin
