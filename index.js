@@ -8,7 +8,7 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(cors());
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const uri = "mongodb+srv://<username>:<password>@cluster0.geunt7i.mongodb.net/?retryWrites=true&w=majority";
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.geunt7i.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -25,6 +25,7 @@ async function run() {
     try {
 
         const mealsCollection = client.db("AlphaFeastDB").collection("mealsCollection");
+        const usersCollection = client.db("AlphaFeastDB").collection("usersCollection");
 
         //non-registered users
         //code for showing data in tabs
@@ -45,13 +46,36 @@ async function run() {
             const cursor = await mealsCollection.find(query).toArray();
             res.send(cursor);
         })
-        
+
         app.get('/allMeals', async (req, res) => {
             // const query = { "mealType": 'breakfast' };
             const cursor = await mealsCollection.find().toArray();
             res.send(cursor);
         })
 
+        //storing data in the reviews section
+        app.patch('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const review = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const cursor = await mealsCollection.find(filter).toArray();
+            const options = { upsert: true };
+            const prevReview = cursor[0].mealReview;
+            const updateDoc = {
+                $set: {
+                    mealReview: [...prevReview, review.review]
+                },
+            };
+            const result = await mealsCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+
+        //users
+        app.post("/users", async (req, res) => {
+            const dataObj = req.body;
+            const result = await usersCollection.insertOne(dataObj);
+            res.send(result);
+        })
 
         //admin
         app.post("/meals", async (req, res) => {
