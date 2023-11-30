@@ -33,25 +33,76 @@ async function run() {
         app.get('/breakfast', async (req, res) => {
             const query = { "mealType": 'breakfast' };
             const cursor = await mealsCollection.find(query).toArray();
-            res.send(cursor);
+            const arr = cursor.filter(item => (item.upcomingOrAddMeals === "addToMeals"));
+            // console.log(arr);
+            res.send(arr);
         })
 
         app.get('/lunch', async (req, res) => {
             const query = { "mealType": 'lunch' };
             const cursor = await mealsCollection.find(query).toArray();
-            res.send(cursor);
+            const arr = cursor.filter(item => (item.upcomingOrAddMeals === "addToMeals"));
+            // console.log(arr);
+            res.send(arr);
         })
 
         app.get('/dinner', async (req, res) => {
             const query = { "mealType": 'dinner' };
             const cursor = await mealsCollection.find(query).toArray();
-            res.send(cursor);
+            const arr = cursor.filter(item => (item.upcomingOrAddMeals === "addToMeals"));
+            // console.log(arr);
+            res.send(arr);
         })
 
         app.get('/allMeals', async (req, res) => {
             // const query = { "mealType": 'breakfast' };
             const cursor = await mealsCollection.find().toArray();
-            res.send(cursor);
+            const arr = cursor.filter(item => (item.upcomingOrAddMeals === "addToMeals"));
+            // console.log(arr);
+            res.send(arr);
+        })
+
+        app.get('/upcomingMeals', async (req, res) => {
+            const cursor = await mealsCollection.find().toArray();
+            const arr = cursor.filter(item => (item.upcomingOrAddMeals === "upcomingMeals"));
+            // console.log(arr);
+            res.send(arr);
+        })
+
+        //handle like and unlike for signed in users
+        app.get('/addLike/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const mealObj = await mealsCollection.findOne(query);
+            const prevLikeCount = +mealObj.mealLikes;
+            const newLikeCount = prevLikeCount + 1;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    mealLikes: newLikeCount
+                },
+            };
+            const result = await mealsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+            // const cursor = await mealsCollection.find().toArray();
+        })
+
+        app.get('/substractLke/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const mealObj = await mealsCollection.findOne(query);
+            const prevLikeCount = +mealObj.mealLikes;
+            const newLikeCount = prevLikeCount - 1;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    mealLikes: newLikeCount
+                },
+            };
+            const result = await mealsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+            // console.log("sub", id);
+            // const cursor = await mealsCollection.find().toArray();
         })
 
         //storing data in the reviews section
@@ -120,12 +171,25 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
-        //getting mealRequest value
-        app.get("/requests/:email", async (req, res) => {
+
+        // getting mealRequest value
+        // app.get("/requests/:email", async (req, res) => {
+        //     const email = req.params.email;
+        //     const filter = { user_email: email };
+        //     const cursor = await usersCollection.find(filter).toArray();
+        //     const data = cursor[0].requestedMealsId
+        // })
+
+        //user existance check depending on email
+        app.get("/isUser/:email", async (req, res) => {
             const email = req.params.email;
-            const filter = { user_email: email };
-            const cursor = await usersCollection.find(filter).toArray();
-            const data = cursor[0].requestedMealsId
+            const query = { user_email: email };
+            const user = await usersCollection.findOne(query);
+            if (user) {
+                res.send({ isExists: true })
+            } else {
+                res.send({ isExists: false })
+            }
         })
 
         //admin
