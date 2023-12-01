@@ -172,6 +172,32 @@ async function run() {
             res.send(result);
         })
 
+        app.get("/mealReqQuery/:email", async (req, res) => {
+            const email = req.params.email;
+            // console.log(email, req.id);
+            const query = { user_email: email };
+            const data = await usersCollection.findOne(query);
+            const meal = data.requestedMealsId;
+            // console.log(meal)
+            res.send(meal);
+        })
+        // app.get('/mealReq/:email', async (req, res) => {
+        //     const email = req.params.email;
+        //     const dataObj = req.body;
+        //     const currentReq = dataObj.mealReqObj;
+        //     const filter = { user_email: email };
+        //     const cursor = await usersCollection.find(filter).toArray();
+        //     const prevReq = cursor[0].requestedMealsId;
+
+        //     const updateDoc = {
+        //         $set: {
+        //             requestedMealsId: [...prevReq, currentReq]
+        //         },
+        //     };
+        //     const result = await usersCollection.updateOne(filter, updateDoc);
+        //     res.send(result);
+        // })
+
         // getting mealRequest value
         // app.get("/requests/:email", async (req, res) => {
         //     const email = req.params.email;
@@ -192,6 +218,24 @@ async function run() {
             }
         })
 
+        app.get("/userReqMeals/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { user_email: email };
+            const user = await usersCollection.findOne(query);
+            const mealRequestsArr = (user?.requestedMealsId);
+            res.send(mealRequestsArr);
+        })
+
+        app.get("/userReview/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { user_email: email };
+            const user = await usersCollection.findOne(query);
+            // const mealRequestsArr = (user?.requestedMealsId);
+            res.send(user);
+            // console.log(user);
+        })
+
+
         //admin
         app.post("/meals", async (req, res) => {
             const dataObj = req.body;
@@ -199,7 +243,61 @@ async function run() {
             res.send(result);
         })
 
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        app.get("/manageUsers", async (req, res) => {
+            const options = {
+                projection: { user_name: 1, user_email: 1, role: 1 },
+            };
+            const cursor = await usersCollection.find().toArray();
+            res.send(cursor);
+        })
+
+        app.patch("/makeAdmin/:email", async (req, res) => {
+            const email = req.params.email;
+            const filter = { user_email: email };
+            const updateDoc = {
+                $set: {
+                    role: "admin"
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
+        //get all users for admin
+        app.get("/getall", async (req, res) => {
+            const cursor = await usersCollection.find().toArray();
+            res.send(cursor);
+        })
+
+        app.patch("/deliverMeal/:id", async (req, res) => {
+            const id = req.params.id;
+            const delivered = req.body.reqObj.email;
+            console.log(id, delivered);
+            // const filter = { user_email: email };
+            // const query = { user_email: email };
+            // const requestedUsers = await usersCollection.findOne(query);
+            // console.log(requestedUsers);
+            // const updateDoc = {
+            //     $set: {
+            //         requestedMealsId: `A harvest of random numbers, such as: ${Math.random()}`
+            //     },
+            // };
+
+            // console.log(email, delivered, mealId);
+            
+            
+            // res.json({ message: "Meal delivery state updated successfully" });
+        });
+
+        //check if admin 
+        app.get("/isAdmin/:email", async(req, res)=>{
+            const email = req.params.email;
+            const query = { user_email: email };
+            const user = await usersCollection.findOne(query);
+            res.send(user?.role);
+        })
+
+
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
