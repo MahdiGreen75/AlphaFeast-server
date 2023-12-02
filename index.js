@@ -27,6 +27,7 @@ async function run() {
         const mealsCollection = client.db("AlphaFeastDB").collection("mealsCollection");
         const usersCollection = client.db("AlphaFeastDB").collection("usersCollection");
         const reviewAndMealRequestCollection = client.db("AlphaFeastDB").collection("reviewAndMealRequestCollection");
+        const upComingMealPublishCollection = client.db("AlphaFeastDB").collection("upComingMealPublishCollection");
 
         //non-registered users
         //code for showing data in tabs
@@ -177,7 +178,7 @@ async function run() {
             // console.log(email, req.id);
             const query = { user_email: email };
             const data = await usersCollection.findOne(query);
-            const meal = data.requestedMealsId;
+            const meal = data?.requestedMealsId;
             // console.log(meal)
             res.send(meal);
         })
@@ -271,30 +272,53 @@ async function run() {
 
         app.patch("/deliverMeal/:id", async (req, res) => {
             const id = req.params.id;
-            const delivered = req.body.reqObj.email;
-            console.log(id, delivered);
+            const email = req.body.reqObj.email;
             // const filter = { user_email: email };
-            // const query = { user_email: email };
-            // const requestedUsers = await usersCollection.findOne(query);
-            // console.log(requestedUsers);
-            // const updateDoc = {
-            //     $set: {
-            //         requestedMealsId: `A harvest of random numbers, such as: ${Math.random()}`
-            //     },
-            // };
-
-            // console.log(email, delivered, mealId);
-            
-            
-            // res.json({ message: "Meal delivery state updated successfully" });
+            const query = { user_email: email };
+            const reqUser = await usersCollection.findOne(query);
+            if (!reqUser) {
+                return res.send({ reqUser: false });
+            }
+            reqUser.requestedMealsId.forEach((obj) => {
+                if (obj.mealId === id) {
+                    obj.states = "delivered";
+                }
+            });
+            console.log(id, email, reqUser);
+            const filter = { user_email: email };
+            const result = await usersCollection.replaceOne(filter, reqUser);
+            // console.log(reqUser);
+            res.send(result);
         });
 
         //check if admin 
-        app.get("/isAdmin/:email", async(req, res)=>{
+        app.get("/isAdmin/:email", async (req, res) => {
             const email = req.params.email;
             const query = { user_email: email };
             const user = await usersCollection.findOne(query);
             res.send(user?.role);
+        })
+
+        app.post("/upcomingMealsByAdmin/:email", async (req, res) => {
+            const email = req.params.email;
+            const upcomingMeal = req.body;
+            upcomingMeal.adminEmail = email;
+            // console.log(email, upcomingMeal);
+            const result = await upComingMealPublishCollection.insertOne(upcomingMeal);
+            res.send(result);
+        })
+
+        app.delete("/delUpcomingMeals/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await mealsCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        app.get("/getMealsPublishedByAdmin", async (req, res) => {
+            const mealsArr = await upComingMealPublishCollection.find().toArray();
+            // console.log(mealsArr);
+            res.send(mealsArr);
         })
 
 
