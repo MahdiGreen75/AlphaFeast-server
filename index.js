@@ -59,8 +59,9 @@ async function run() {
             // const query = { "mealType": 'breakfast' };
             const cursor = await mealsCollection.find().toArray();
             const arr = cursor.filter(item => (item.upcomingOrAddMeals === "addToMeals"));
+            const mealsArr = await upComingMealPublishCollection.find().toArray();
             // console.log(arr);
-            res.send(arr);
+            res.send([...arr, ...mealsArr]);
         })
 
         app.get('/upcomingMeals', async (req, res) => {
@@ -112,14 +113,23 @@ async function run() {
             const review = req.body;
             const filter = { _id: new ObjectId(id) };
             const cursor = await mealsCollection.find(filter).toArray();
-            const prevReview = cursor[0].mealReview;
-            const updateDoc = {
-                $set: {
-                    mealReview: [...prevReview, review.review]
-                },
-            };
-            const result = await mealsCollection.updateOne(filter, updateDoc);
-            res.send(result);
+            const prevReview = cursor[0]?.mealReview;
+            if (prevReview) {
+                const updateDoc = {
+                    $set: {
+                        mealReview: [...prevReview, review.review]
+                    },
+                };
+                const result = await mealsCollection.updateOne(filter, updateDoc);
+                res.send(result);
+            } else {
+                console.log("bypassed...")
+                res.send({
+                    acknowledged: true,
+                    matchedCount: 1,
+                    modifiedCount: 1
+                });
+            }
         })
 
 
@@ -313,12 +323,6 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await mealsCollection.deleteOne(query);
             res.send(result);
-        })
-
-        app.get("/getMealsPublishedByAdmin", async (req, res) => {
-            const mealsArr = await upComingMealPublishCollection.find().toArray();
-            // console.log(mealsArr);
-            res.send(mealsArr);
         })
 
 
