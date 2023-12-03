@@ -2,8 +2,8 @@ const express = require('express');
 const app = express();
 require('dotenv').config()
 const cors = require('cors');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
-
 //middlewares
 app.use(express.json());
 app.use(cors());
@@ -324,6 +324,26 @@ async function run() {
             const result = await mealsCollection.deleteOne(query);
             res.send(result);
         })
+        //stripe payment
+        app.post("/create-payment-intent", async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            console.log("Amount Inside the intent", amount, price);
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: [
+                    "card"
+                ]
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+
 
 
     } finally {
