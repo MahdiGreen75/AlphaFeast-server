@@ -28,6 +28,7 @@ async function run() {
         const usersCollection = client.db("AlphaFeastDB").collection("usersCollection");
         const reviewAndMealRequestCollection = client.db("AlphaFeastDB").collection("reviewAndMealRequestCollection");
         const upComingMealPublishCollection = client.db("AlphaFeastDB").collection("upComingMealPublishCollection");
+        const paymentCollection = client.db("AlphaFeastDB").collection("paymentCollection");
 
         //non-registered users
         //code for showing data in tabs
@@ -343,7 +344,21 @@ async function run() {
             });
         });
 
+        app.post("/payments", async (req, res) => {
+            const payment = (req.body);
+            // console.log(payment);
+            const result = await paymentCollection.insertOne(payment);
+            res.send(result);
+        })
 
+        app.get("/userPayment/:email", async (req, res) => {
+            const email = req.params.email;
+            // console.log(email);
+            const query = { email: email };
+            const result = await paymentCollection.findOne(query);
+            // console.log(result);
+            res.send(result);
+        })
 
 
     } finally {
